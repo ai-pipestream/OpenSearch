@@ -10,7 +10,7 @@ We currently support:
 *   **JVM**: Heap usage, GC counts, and execution time.
 
 ## How it Works
-1.  **Efficient Streaming**: You ask for the metrics you want. The server checks them every few seconds (configurable).
+1.  **Efficient Streaming**: Client requests for the metrics you want. The server would check them every few seconds (this is configurable).
 2.  **Smart Updates**: To save bandwidth, the server can be configured to only send data when something significant changes (like a 10% jump in queue depth or a new rejection).
 3.  **Standard Protocol**: It uses Protocol Buffers and gRPC, making it easy to consume from any language (Python, Go, Java, etc.).
 
