@@ -46,6 +46,20 @@ tasks.named("dependencyLicenses").configure {
   mapping from: /grpc-.*/, to: 'grpc'
 }
 
+tasks.named('missingJavadoc').configure {
+  javadocMissingIgnore = ['org.opensearch.protobufs.services']
+}
+
+tasks.named('licenseHeaders').configure {
+  excludes << 'org/opensearch/protobufs/services/**'
+}
+
+spotless {
+  java {
+    targetExclude 'src/main/java/org/opensearch/protobufs/services/**'
+  }
+}
+
 thirdPartyAudit {
   ignoreMissingClasses(
     'com.aayushatharva.brotli4j.Brotli4jLoader',

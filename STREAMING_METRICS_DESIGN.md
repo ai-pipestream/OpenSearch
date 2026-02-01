@@ -1,43 +1,37 @@
-# Real-Time Node Metrics via gRPC
+# Streaming Node Metrics (gRPC)
 
-## Overview
-This feature adds a way to stream internal OpenSearch node metrics in real-time using gRPC. Instead of constantly polling the REST API (which can be heavy), you open a single connection and the server pushes updates to you.
+## What is this?
+This is a gRPC service that pushes node metrics to clients over a long-lived connection. It's an alternative to polling the `/_nodes/stats` REST API.
 
-## What Metrics?
-We currently support:
-*   **Thread Pools**: Active threads, queue depth, and rejection counts.
-*   **Circuit Breakers**: Memory usage and trip counts.
-*   **JVM**: Heap usage, GC counts, and execution time.
+## Available Metrics
+*   **Thread Pools**: Threads (active, queue, rejected, completed).
+*   **Circuit Breakers**: Current estimated memory usage and trip counts.
+*   **JVM**: Heap usage and Garbage Collection stats.
 
-## How it Works
-1.  **Efficient Streaming**: Client requests for the metrics you want. The server would check them every few seconds (this is configurable).
-2.  **Smart Updates**: To save bandwidth, the server can be configured to only send data when something significant changes (like a 10% jump in queue depth or a new rejection).
-3.  **Standard Protocol**: It uses Protocol Buffers and gRPC, making it easy to consume from any language (Python, Go, Java, etc.).
+## How it works
+1.  **Subscriptions**: You request specific categories of metrics (e.g., just JVM, or everything).
+2.  **Push Interval**: You set how often the server checks for updates (default is 5 seconds).
+3.  **Change Detection**: The server can be told to only send a message when values actually change. You can set a threshold (like 10%) so minor fluctuations don't trigger a push.
 
 ## Running the Demo
-We've included a ready-to-run demo to see this in action.
+We've included a client script to test the service.
 
-### Prerequisites
-1.  Build and start OpenSearch with the `transport-grpc` plugin.
-    ```bash
-    ./gradlew run
-    ```
+### 1. Start OpenSearch
+Build and start the node with the gRPC plugin:
+```bash
+./gradlew run
+```
 
-### Starting the Client
-1.  Open a new terminal.
-2.  Go to the demo directory:
-    ```bash
-    cd OpenSearch/demo
-    ```
-3.  Run the demo script:
-    ```bash
-    ./demo.sh
-    ```
-
-This script will set up a Python environment and start printing live metrics from your local OpenSearch node.
+### 2. Run the Client
+Open a new terminal and run the demo script:
+```bash
+cd OpenSearch/demo
+./demo.sh
+```
+This script sets up a Python environment and prints live metrics from the server.
 
 ## Configuration
-You can tweak the behavior in `opensearch.yml`:
-*   `grpc.metrics.streaming.enabled`: Turn it on/off (default: true).
-*   `grpc.metrics.max_streams`: Limit concurrent listeners (default: 50).
-*   `grpc.metrics.default_interval`: How often to check metrics in seconds (default: 5).
+Settings in `opensearch.yml`:
+*   `grpc.metrics.streaming.enabled`: Enable the service (default: true).
+*   `grpc.metrics.max_streams`: Max concurrent client connections (default: 50).
+*   `grpc.metrics.default_interval`: Default check interval in seconds (default: 5).
