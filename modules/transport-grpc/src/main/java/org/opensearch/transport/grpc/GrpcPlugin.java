@@ -65,6 +65,9 @@ import static org.opensearch.transport.grpc.Netty4GrpcServerTransport.SETTING_GR
 import static org.opensearch.transport.grpc.Netty4GrpcServerTransport.SETTING_GRPC_MAX_CONNECTION_AGE;
 import static org.opensearch.transport.grpc.Netty4GrpcServerTransport.SETTING_GRPC_MAX_CONNECTION_IDLE;
 import static org.opensearch.transport.grpc.Netty4GrpcServerTransport.SETTING_GRPC_MAX_MSG_SIZE;
+import static org.opensearch.transport.grpc.Netty4GrpcServerTransport.SETTING_GRPC_METRICS_DEFAULT_INTERVAL;
+import static org.opensearch.transport.grpc.Netty4GrpcServerTransport.SETTING_GRPC_METRICS_MAX_STREAMS;
+import static org.opensearch.transport.grpc.Netty4GrpcServerTransport.SETTING_GRPC_METRICS_STREAMING_ENABLED;
 import static org.opensearch.transport.grpc.Netty4GrpcServerTransport.SETTING_GRPC_PORT;
 import static org.opensearch.transport.grpc.Netty4GrpcServerTransport.SETTING_GRPC_PUBLISH_HOST;
 import static org.opensearch.transport.grpc.Netty4GrpcServerTransport.SETTING_GRPC_PUBLISH_PORT;
@@ -88,6 +91,7 @@ public final class GrpcPlugin extends Plugin implements NetworkPlugin, Extensibl
     private GrpcInterceptorChain serverInterceptor; // Initialized in createComponents
     private List<GrpcInterceptorProvider> interceptorProviders = new ArrayList<>();
     private Client client;
+    private ClusterService clusterService;
 
     /**
      * Creates a new GrpcPlugin instance.
@@ -182,12 +186,19 @@ public final class GrpcPlugin extends Plugin implements NetworkPlugin, Extensibl
         }
 
         return Collections.singletonMap(GRPC_TRANSPORT_SETTING_KEY, () -> {
-            List<BindableService> grpcServices = new ArrayList<>(
-                List.of(
-                    new DocumentServiceImpl(client, circuitBreakerService),
-                    new SearchServiceImpl(client, queryUtils, circuitBreakerService)
-                )
-            );
+            List<BindableService> grpcServices = new ArrayList<>();
+            grpcServices.add(new DocumentServiceImpl(client, circuitBreakerService));
+            grpcServices.add(new SearchServiceImpl(client, queryUtils, circuitBreakerService));
+
+            if (SETTING_GRPC_METRICS_STREAMING_ENABLED.get(settings)) {
+                grpcServices.add(new org.opensearch.transport.grpc.services.MetricsServiceImpl(
+                    threadPool,
+                    circuitBreakerService,
+                    clusterService,
+                    settings
+                ));
+            }
+
             for (GrpcServiceFactory serviceFac : servicesFactory) {
                 List<BindableService> pluginServices = serviceFac.initClient(client)
                     .initSettings(settings)
@@ -236,12 +247,19 @@ public final class GrpcPlugin extends Plugin implements NetworkPlugin, Extensibl
             throw new RuntimeException("createComponents must be called first to initialize server provided resources.");
         }
         return Collections.singletonMap(GRPC_SECURE_TRANSPORT_SETTING_KEY, () -> {
-            List<BindableService> grpcServices = new ArrayList<>(
-                List.of(
-                    new DocumentServiceImpl(client, circuitBreakerService),
-                    new SearchServiceImpl(client, queryUtils, circuitBreakerService)
-                )
-            );
+            List<BindableService> grpcServices = new ArrayList<>();
+            grpcServices.add(new DocumentServiceImpl(client, circuitBreakerService));
+            grpcServices.add(new SearchServiceImpl(client, queryUtils, circuitBreakerService));
+
+            if (SETTING_GRPC_METRICS_STREAMING_ENABLED.get(settings)) {
+                grpcServices.add(new org.opensearch.transport.grpc.services.MetricsServiceImpl(
+                    threadPool,
+                    circuitBreakerService,
+                    clusterService,
+                    settings
+                ));
+            }
+
             for (GrpcServiceFactory serviceFac : servicesFactory) {
                 List<BindableService> pluginServices = serviceFac.initClient(client)
                     .initSettings(settings)
@@ -288,7 +306,10 @@ public final class GrpcPlugin extends Plugin implements NetworkPlugin, Extensibl
             SETTING_GRPC_MAX_MSG_SIZE,
             SETTING_GRPC_MAX_CONNECTION_AGE,
             SETTING_GRPC_MAX_CONNECTION_IDLE,
-            SETTING_GRPC_KEEPALIVE_TIMEOUT
+            SETTING_GRPC_KEEPALIVE_TIMEOUT,
+            SETTING_GRPC_METRICS_STREAMING_ENABLED,
+            SETTING_GRPC_METRICS_MAX_STREAMS,
+            SETTING_GRPC_METRICS_DEFAULT_INTERVAL
         );
     }
 
@@ -340,6 +361,7 @@ public final class GrpcPlugin extends Plugin implements NetworkPlugin, Extensibl
         Supplier<RepositoriesService> repositoriesServiceSupplier
     ) {
         this.client = client;
+        this.clusterService = clusterService;
 
         // Initialize the interceptor chain with ThreadContext
         this.serverInterceptor = new GrpcInterceptorChain(threadPool.getThreadContext());

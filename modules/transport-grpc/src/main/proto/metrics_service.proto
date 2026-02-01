@@ -1,0 +1,174 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * The OpenSearch Contributors require contributions made to
+ * this file be licensed under the Apache-2.0 license or a
+ * compatible open source license.
+ *
+ * Modifications Copyright OpenSearch Contributors. See
+ * GitHub history for details.
+ */
+
+syntax = "proto3";
+package org.opensearch.protobufs.services;
+
+option java_multiple_files = true;
+option java_package = "org.opensearch.protobufs.services";
+option java_outer_classname = "MetricsServiceProto";
+option go_package = "github.com/opensearch-project/opensearch-protobufs/go/services";
+
+// Metrics streaming service for real-time node and cluster stats
+service MetricsService {
+  // Server-side streaming of node metrics (thread pool, circuit breaker, etc.)
+  rpc StreamNodeMetrics(StreamMetricsRequest) returns (stream NodeMetricsSnapshot) {}
+}
+
+// Request to start streaming metrics
+message StreamMetricsRequest {
+  // Which metric categories to stream
+  repeated MetricCategory categories = 1;
+
+  // Update interval in seconds (default: 5, min: 1, max: 60)
+  int32 interval_seconds = 2;
+
+  // Only send updates when values change (default: true)
+  bool delta_mode = 3;
+
+  // Minimum change threshold to trigger update (0.0-1.0, default: 0.1 = 10%)
+  float change_threshold = 4;
+}
+
+// Metric categories available for streaming
+enum MetricCategory {
+  THREAD_POOL = 0;
+  CIRCUIT_BREAKER = 1;
+  INDEXING_PRESSURE = 2;
+  SEARCH_BACKPRESSURE = 3;
+  JVM = 4;
+}
+
+// Snapshot of node metrics at a point in time
+message NodeMetricsSnapshot {
+  // Timestamp when metrics were collected
+  int64 timestamp_millis = 1;
+
+  // Node identifier
+  string node_id = 2;
+
+  // Metric payloads (only populated if requested in categories)
+  optional ThreadPoolMetrics thread_pool = 3;
+  optional CircuitBreakerMetrics circuit_breaker = 4;
+  optional IndexingPressureMetrics indexing_pressure = 5;
+  optional SearchBackpressureMetrics search_backpressure = 6;
+  optional JvmMetrics jvm = 7;
+}
+
+// Thread pool statistics
+message ThreadPoolMetrics {
+  repeated ThreadPoolStats pools = 1;
+}
+
+message ThreadPoolStats {
+  // Thread pool name (e.g., "search", "write", "grpc")
+  string name = 1;
+
+  // Total threads in the pool
+  int32 threads = 2;
+
+  // Current queue depth
+  int32 queue = 3;
+
+  // Currently active/executing threads
+  int32 active = 4;
+
+  // Cumulative rejected tasks
+  int64 rejected = 5;
+
+  // Peak thread count reached
+  int32 largest = 6;
+
+  // Cumulative completed tasks
+  int64 completed = 7;
+
+  // Total wait time in nanoseconds (OpenSearch 2.11+)
+  int64 wait_time_nanos = 8;
+}
+
+// Circuit breaker statistics
+message CircuitBreakerMetrics {
+  repeated CircuitBreakerStats breakers = 1;
+}
+
+message CircuitBreakerStats {
+  // Breaker name (e.g., "request", "fielddata", "in_flight_requests")
+  string name = 1;
+
+  // Maximum bytes allowed
+  int64 limit = 2;
+
+  // Current estimated bytes used
+  int64 estimated = 3;
+
+  // Overhead multiplier
+  double overhead = 4;
+
+  // Number of times breaker has tripped
+  int64 tripped = 5;
+}
+
+// JVM statistics
+message JvmMetrics {
+  // Heap memory used in bytes
+  int64 heap_used_bytes = 1;
+
+  // Heap memory max in bytes
+  int64 heap_max_bytes = 2;
+
+  // Non-heap memory used in bytes
+  int64 non_heap_used_bytes = 3;
+
+  // Cumulative GC count
+  int64 gc_count = 4;
+
+  // Cumulative GC time in milliseconds
+  int64 gc_time_millis = 5;
+}
+
+// Indexing pressure statistics
+message IndexingPressureMetrics {
+  // Current coordinating bytes
+  int64 current_coordinating_bytes = 1;
+
+  // Current primary bytes
+  int64 current_primary_bytes = 2;
+
+  // Current replica bytes
+  int64 current_replica_bytes = 3;
+
+  // Total coordinating rejections
+  int64 total_coordinating_rejected = 4;
+
+  // Total primary rejections
+  int64 total_primary_rejected = 5;
+
+  // Total replica rejections
+  int64 total_replica_rejected = 6;
+
+  // Memory limit in bytes
+  int64 memory_limit = 7;
+}
+
+// Search backpressure statistics
+message SearchBackpressureMetrics {
+  // Number of search tasks being tracked
+  int64 search_task_count = 1;
+
+  // Number of search shard tasks being tracked
+  int64 search_shard_task_count = 2;
+
+  // Number of tasks cancelled due to backpressure
+  int64 cancellation_count = 3;
+
+  // Number of tasks limited/throttled
+  int64 limited_count = 4;
+}

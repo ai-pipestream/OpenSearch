@@ -188,6 +188,36 @@ public class Netty4GrpcServerTransport extends AuxTransport {
     );
 
     /**
+     * Enable/disable gRPC metrics streaming service.
+     */
+    public static final Setting<Boolean> SETTING_GRPC_METRICS_STREAMING_ENABLED = Setting.boolSetting(
+        "grpc.metrics.streaming.enabled",
+        true,
+        Setting.Property.NodeScope
+    );
+
+    /**
+     * Maximum number of concurrent metrics streams allowed per node.
+     */
+    public static final Setting<Integer> SETTING_GRPC_METRICS_MAX_STREAMS = Setting.intSetting(
+        "grpc.metrics.max_streams",
+        50,
+        1,
+        Setting.Property.NodeScope
+    );
+
+    /**
+     * Default update interval in seconds for metrics streaming if not specified in request.
+     */
+    public static final Setting<Integer> SETTING_GRPC_METRICS_DEFAULT_INTERVAL = Setting.intSetting(
+        "grpc.metrics.default_interval",
+        5,
+        1,
+        60,
+        Setting.Property.NodeScope
+    );
+
+    /**
      * Port range on which servers bind.
      */
     protected PortsRange port;
