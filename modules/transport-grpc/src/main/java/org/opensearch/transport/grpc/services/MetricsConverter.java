@@ -28,7 +28,7 @@ class MetricsConverter {
 
         for (ThreadPoolStats.Stats pool : stats) {
             builder.addPools(
-                ThreadPoolMetrics.ThreadPoolStats.newBuilder()
+                org.opensearch.protobufs.services.ThreadPoolStats.newBuilder()
                     .setName(pool.getName())
                     .setThreads(pool.getThreads())
                     .setQueue(pool.getQueue())
@@ -52,7 +52,7 @@ class MetricsConverter {
 
         for (org.opensearch.core.indices.breaker.CircuitBreakerStats breaker : stats.getAllStats()) {
             builder.addBreakers(
-                CircuitBreakerMetrics.CircuitBreakerStats.newBuilder()
+                org.opensearch.protobufs.services.CircuitBreakerStats.newBuilder()
                     .setName(breaker.getName())
                     .setLimit(breaker.getLimit())
                     .setEstimated(breaker.getEstimated())
@@ -108,8 +108,8 @@ class MetricsConverter {
         ThreadPoolMetrics previous,
         float threshold
     ) {
-        for (ThreadPoolMetrics.ThreadPoolStats currentPool : current.getPoolsList()) {
-            ThreadPoolMetrics.ThreadPoolStats previousPool = findPoolByName(previous, currentPool.getName());
+        for (org.opensearch.protobufs.services.ThreadPoolStats currentPool : current.getPoolsList()) {
+            org.opensearch.protobufs.services.ThreadPoolStats previousPool = findPoolByName(previous, currentPool.getName());
             if (previousPool == null) {
                 return true;  // New pool appeared
             }
@@ -148,8 +148,8 @@ class MetricsConverter {
         CircuitBreakerMetrics current,
         CircuitBreakerMetrics previous
     ) {
-        for (CircuitBreakerMetrics.CircuitBreakerStats currentBreaker : current.getBreakersList()) {
-            CircuitBreakerMetrics.CircuitBreakerStats previousBreaker = findBreakerByName(previous, currentBreaker.getName());
+        for (org.opensearch.protobufs.services.CircuitBreakerStats currentBreaker : current.getBreakersList()) {
+            org.opensearch.protobufs.services.CircuitBreakerStats previousBreaker = findBreakerByName(previous, currentBreaker.getName());
             if (previousBreaker == null) {
                 continue;
             }
@@ -163,8 +163,8 @@ class MetricsConverter {
         return false;
     }
 
-    private static ThreadPoolMetrics.ThreadPoolStats findPoolByName(ThreadPoolMetrics metrics, String name) {
-        for (ThreadPoolMetrics.ThreadPoolStats pool : metrics.getPoolsList()) {
+    private static org.opensearch.protobufs.services.ThreadPoolStats findPoolByName(ThreadPoolMetrics metrics, String name) {
+        for (org.opensearch.protobufs.services.ThreadPoolStats pool : metrics.getPoolsList()) {
             if (pool.getName().equals(name)) {
                 return pool;
             }
@@ -172,8 +172,8 @@ class MetricsConverter {
         return null;
     }
 
-    private static CircuitBreakerMetrics.CircuitBreakerStats findBreakerByName(CircuitBreakerMetrics metrics, String name) {
-        for (CircuitBreakerMetrics.CircuitBreakerStats breaker : metrics.getBreakersList()) {
+    private static org.opensearch.protobufs.services.CircuitBreakerStats findBreakerByName(CircuitBreakerMetrics metrics, String name) {
+        for (org.opensearch.protobufs.services.CircuitBreakerStats breaker : metrics.getBreakersList()) {
             if (breaker.getName().equals(name)) {
                 return breaker;
             }
