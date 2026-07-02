@@ -12,21 +12,20 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.settings.Settings;
+import org.opensearch.common.unit.TimeValue;
 import org.opensearch.core.common.breaker.CircuitBreaker;
 import org.opensearch.core.common.breaker.CircuitBreakingException;
 import org.opensearch.core.indices.breaker.CircuitBreakerService;
-import org.opensearch.threadpool.ThreadPool;
+import org.opensearch.monitor.jvm.JvmStats;
 import org.opensearch.protobufs.services.MetricCategory;
 import org.opensearch.protobufs.services.MetricsServiceGrpc;
 import org.opensearch.protobufs.services.NodeMetricsSnapshot;
 import org.opensearch.protobufs.services.StreamMetricsRequest;
-import org.opensearch.monitor.jvm.JvmStats;
+import org.opensearch.threadpool.Scheduler.Cancellable;
+import org.opensearch.threadpool.ThreadPool;
 import org.opensearch.transport.grpc.util.GrpcErrorHandler;
 
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.opensearch.common.unit.TimeValue;
-import org.opensearch.threadpool.Scheduler.Cancellable;
 
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
@@ -81,10 +80,7 @@ public class MetricsServiceImpl extends MetricsServiceGrpc.MetricsServiceImplBas
     }
 
     @Override
-    public void streamNodeMetrics(
-        StreamMetricsRequest request,
-        StreamObserver<NodeMetricsSnapshot> responseObserver
-    ) {
+    public void streamNodeMetrics(StreamMetricsRequest request, StreamObserver<NodeMetricsSnapshot> responseObserver) {
         // Check concurrent stream limit
         int currentStreams = activeStreams.incrementAndGet();
         if (currentStreams > maxConcurrentStreams) {
@@ -256,10 +252,7 @@ public class MetricsServiceImpl extends MetricsServiceGrpc.MetricsServiceImplBas
 
             // Check if circuit breaker stats changed
             if (current.getCircuitBreaker() != null && previousSnapshot.getCircuitBreaker() != null) {
-                if (MetricsConverter.hasCircuitBreakerTripped(
-                    current.getCircuitBreaker(),
-                    previousSnapshot.getCircuitBreaker()
-                )) {
+                if (MetricsConverter.hasCircuitBreakerTripped(current.getCircuitBreaker(), previousSnapshot.getCircuitBreaker())) {
                     return true;
                 }
             }

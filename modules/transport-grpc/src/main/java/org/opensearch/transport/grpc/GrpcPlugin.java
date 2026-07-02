@@ -191,12 +191,14 @@ public final class GrpcPlugin extends Plugin implements NetworkPlugin, Extensibl
             grpcServices.add(new SearchServiceImpl(client, queryUtils, circuitBreakerService));
 
             if (SETTING_GRPC_METRICS_STREAMING_ENABLED.get(settings)) {
-                grpcServices.add(new org.opensearch.transport.grpc.services.MetricsServiceImpl(
-                    threadPool,
-                    circuitBreakerService,
-                    clusterService,
-                    settings
-                ));
+                grpcServices.add(
+                    new org.opensearch.transport.grpc.services.MetricsServiceImpl(
+                        threadPool,
+                        circuitBreakerService,
+                        clusterService,
+                        settings
+                    )
+                );
             }
 
             for (GrpcServiceFactory serviceFac : servicesFactory) {
@@ -252,12 +254,14 @@ public final class GrpcPlugin extends Plugin implements NetworkPlugin, Extensibl
             grpcServices.add(new SearchServiceImpl(client, queryUtils, circuitBreakerService));
 
             if (SETTING_GRPC_METRICS_STREAMING_ENABLED.get(settings)) {
-                grpcServices.add(new org.opensearch.transport.grpc.services.MetricsServiceImpl(
-                    threadPool,
-                    circuitBreakerService,
-                    clusterService,
-                    settings
-                ));
+                grpcServices.add(
+                    new org.opensearch.transport.grpc.services.MetricsServiceImpl(
+                        threadPool,
+                        circuitBreakerService,
+                        clusterService,
+                        settings
+                    )
+                );
             }
 
             for (GrpcServiceFactory serviceFac : servicesFactory) {

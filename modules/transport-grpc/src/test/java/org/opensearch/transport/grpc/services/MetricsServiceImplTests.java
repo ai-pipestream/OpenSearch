@@ -11,16 +11,14 @@ package org.opensearch.transport.grpc.services;
 import org.opensearch.cluster.node.DiscoveryNode;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.settings.Settings;
-import org.opensearch.common.unit.TimeValue;
-import org.opensearch.common.util.concurrent.OpenSearchExecutors;
 import org.opensearch.core.indices.breaker.CircuitBreakerService;
 import org.opensearch.core.indices.breaker.NoneCircuitBreakerService;
-import org.opensearch.test.OpenSearchTestCase;
-import org.opensearch.threadpool.TestThreadPool;
-import org.opensearch.threadpool.ThreadPool;
 import org.opensearch.protobufs.services.MetricCategory;
 import org.opensearch.protobufs.services.NodeMetricsSnapshot;
 import org.opensearch.protobufs.services.StreamMetricsRequest;
+import org.opensearch.test.OpenSearchTestCase;
+import org.opensearch.threadpool.TestThreadPool;
+import org.opensearch.threadpool.ThreadPool;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,12 +51,7 @@ public class MetricsServiceImplTests extends OpenSearchTestCase {
         when(discoveryNode.getId()).thenReturn("test-node-id");
         when(clusterService.localNode()).thenReturn(discoveryNode);
 
-        service = new MetricsServiceImpl(
-            threadPool,
-            circuitBreakerService,
-            clusterService,
-            Settings.EMPTY
-        );
+        service = new MetricsServiceImpl(threadPool, circuitBreakerService, clusterService, Settings.EMPTY);
     }
 
     @Override
@@ -78,9 +71,11 @@ public class MetricsServiceImplTests extends OpenSearchTestCase {
             @Override
             public void onNext(NodeMetricsSnapshot value) {
                 snapshots.add(value);
-                logger.info("Received snapshot at {}, thread pools: {}",
+                logger.info(
+                    "Received snapshot at {}, thread pools: {}",
                     value.getTimestampMillis(),
-                    value.getThreadPool() != null ? value.getThreadPool().getPoolsList().size() : 0);
+                    value.getThreadPool() != null ? value.getThreadPool().getPoolsList().size() : 0
+                );
                 latch.countDown();
             }
 
@@ -119,7 +114,9 @@ public class MetricsServiceImplTests extends OpenSearchTestCase {
         assertTrue("Should have thread pools", snapshot.getThreadPool().getPoolsList().size() > 0);
 
         // Verify we have common thread pools
-        boolean hasGeneric = snapshot.getThreadPool().getPoolsList().stream()
+        boolean hasGeneric = snapshot.getThreadPool()
+            .getPoolsList()
+            .stream()
             .anyMatch(pool -> pool.getName().equals(ThreadPool.Names.GENERIC));
         assertTrue("Should have 'generic' thread pool", hasGeneric);
     }
@@ -135,8 +132,10 @@ public class MetricsServiceImplTests extends OpenSearchTestCase {
             @Override
             public void onNext(NodeMetricsSnapshot value) {
                 if (snapshotCount.incrementAndGet() == 1) {
-                    logger.info("Received snapshot with circuit breakers: {}",
-                        value.getCircuitBreaker() != null ? value.getCircuitBreaker().getBreakersList().size() : 0);
+                    logger.info(
+                        "Received snapshot with circuit breakers: {}",
+                        value.getCircuitBreaker() != null ? value.getCircuitBreaker().getBreakersList().size() : 0
+                    );
 
                     assertNotNull("Circuit breaker metrics should be present", value.getCircuitBreaker());
                     assertTrue("Should have circuit breakers", value.getCircuitBreaker().getBreakersList().size() > 0);
@@ -220,9 +219,7 @@ public class MetricsServiceImplTests extends OpenSearchTestCase {
         StreamObserver<NodeMetricsSnapshot> observer = new StreamObserver<NodeMetricsSnapshot>() {
             @Override
             public void onNext(NodeMetricsSnapshot value) {
-                logger.info("Snapshot: threadPool={}, circuitBreaker={}",
-                    value.getThreadPool() != null,
-                    value.getCircuitBreaker() != null);
+                logger.info("Snapshot: threadPool={}, circuitBreaker={}", value.getThreadPool() != null, value.getCircuitBreaker() != null);
 
                 assertNotNull("Thread pool should be present", value.getThreadPool());
                 assertNotNull("Circuit breaker should be present", value.getCircuitBreaker());
@@ -270,9 +267,14 @@ public class MetricsServiceImplTests extends OpenSearchTestCase {
                     assertTrue("Active should be >= 0", pool.getActive() >= 0);
                     assertTrue("Rejected should be >= 0", pool.getRejected() >= 0);
 
-                    logger.info("Pool '{}': threads={}, queue={}, active={}, rejected={}",
-                        pool.getName(), pool.getThreads(), pool.getQueue(),
-                        pool.getActive(), pool.getRejected());
+                    logger.info(
+                        "Pool '{}': threads={}, queue={}, active={}, rejected={}",
+                        pool.getName(),
+                        pool.getThreads(),
+                        pool.getQueue(),
+                        pool.getActive(),
+                        pool.getRejected()
+                    );
                 });
 
                 latch.countDown();

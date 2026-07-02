@@ -10,10 +10,10 @@ package org.opensearch.transport.grpc.services;
 
 import org.opensearch.core.indices.breaker.AllCircuitBreakerStats;
 import org.opensearch.monitor.jvm.JvmStats;
-import org.opensearch.threadpool.ThreadPoolStats;
 import org.opensearch.protobufs.services.CircuitBreakerMetrics;
 import org.opensearch.protobufs.services.JvmMetrics;
 import org.opensearch.protobufs.services.ThreadPoolMetrics;
+import org.opensearch.threadpool.ThreadPoolStats;
 
 /**
  * Converts OpenSearch stats objects to protobuf metric messages.
@@ -70,13 +70,13 @@ class MetricsConverter {
      */
     static JvmMetrics convertJvmStats(JvmStats stats) {
         JvmMetrics.Builder builder = JvmMetrics.newBuilder();
-        
+
         if (stats != null) {
             JvmStats.Mem mem = stats.getMem();
             if (mem != null) {
                 builder.setHeapUsedBytes(mem.getHeapUsed().getBytes())
-                       .setHeapMaxBytes(mem.getHeapMax().getBytes())
-                       .setNonHeapUsedBytes(mem.getNonHeapUsed().getBytes());
+                    .setHeapMaxBytes(mem.getHeapMax().getBytes())
+                    .setNonHeapUsedBytes(mem.getNonHeapUsed().getBytes());
             }
 
             JvmStats.GarbageCollectors gc = stats.getGc();
@@ -87,11 +87,10 @@ class MetricsConverter {
                     totalCount += collector.getCollectionCount();
                     totalTime += collector.getCollectionTime().getMillis();
                 }
-                builder.setGcCount(totalCount)
-                       .setGcTimeMillis(totalTime);
+                builder.setGcCount(totalCount).setGcTimeMillis(totalTime);
             }
         }
-        
+
         return builder.build();
     }
 
@@ -103,11 +102,7 @@ class MetricsConverter {
      * @param threshold Change threshold (0.0-1.0)
      * @return true if significant change detected
      */
-    static boolean hasSignificantThreadPoolChange(
-        ThreadPoolMetrics current,
-        ThreadPoolMetrics previous,
-        float threshold
-    ) {
+    static boolean hasSignificantThreadPoolChange(ThreadPoolMetrics current, ThreadPoolMetrics previous, float threshold) {
         for (org.opensearch.protobufs.services.ThreadPoolStats currentPool : current.getPoolsList()) {
             org.opensearch.protobufs.services.ThreadPoolStats previousPool = findPoolByName(previous, currentPool.getName());
             if (previousPool == null) {
@@ -121,7 +116,7 @@ class MetricsConverter {
 
             // Check queue depth change
             if (previousPool.getQueue() > 0) {
-                double queueChange = Math.abs(currentPool.getQueue() - previousPool.getQueue());
+                double queueChange = Math.abs((double) currentPool.getQueue() - previousPool.getQueue());
                 if (queueChange / previousPool.getQueue() > threshold) {
                     return true;
                 }
@@ -131,7 +126,7 @@ class MetricsConverter {
 
             // Check active threads change
             if (previousPool.getActive() > 0) {
-                double activeChange = Math.abs(currentPool.getActive() - previousPool.getActive());
+                double activeChange = Math.abs((double) currentPool.getActive() - previousPool.getActive());
                 if (activeChange / previousPool.getActive() > threshold) {
                     return true;
                 }
@@ -144,10 +139,7 @@ class MetricsConverter {
     /**
      * Checks if any circuit breaker has tripped since last snapshot.
      */
-    static boolean hasCircuitBreakerTripped(
-        CircuitBreakerMetrics current,
-        CircuitBreakerMetrics previous
-    ) {
+    static boolean hasCircuitBreakerTripped(CircuitBreakerMetrics current, CircuitBreakerMetrics previous) {
         for (org.opensearch.protobufs.services.CircuitBreakerStats currentBreaker : current.getBreakersList()) {
             org.opensearch.protobufs.services.CircuitBreakerStats previousBreaker = findBreakerByName(previous, currentBreaker.getName());
             if (previousBreaker == null) {
